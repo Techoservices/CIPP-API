@@ -1,4 +1,4 @@
-function Set-TECHOMailboxAccess {
+function Set-TECHOMailboxAccess3 {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
