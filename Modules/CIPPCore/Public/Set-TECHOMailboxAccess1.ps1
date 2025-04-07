@@ -1,4 +1,4 @@
-function Set-TECHOMailboxAccess {
+function Set-TECHOMailboxAccess1 {
     [CmdletBinding()]
     param (
         $AccessUser,
