@@ -144,16 +144,30 @@ function Set-TechoDelegatedAccess {
                     # Add permissions if needed
                     if ($needsUpdate) {
                         $addStart = Get-Date
-                        $null = New-ExoRequest -tenantid $TenantFilter -cmdlet 'Add-MailboxPermission' -cmdParams @{
-                            Identity = $mailboxIdentity
-                            User = $AccessUser
-                            AccessRights = $AccessRights
-                            InheritanceType = 'all'
-                            Automapping = $Automap
-                        } -ErrorAction Stop
+                        
+                        # Handle SendAs permission separately
+                        if ($AccessRights -contains 'SendAs') {
+                            $null = New-ExoRequest -tenantid $TenantFilter -cmdlet 'Add-RecipientPermission' -cmdParams @{
+                                Identity = $mailboxIdentity
+                                Trustee = $AccessUser
+                                AccessRights = 'SendAs'
+                            } -ErrorAction Stop
+                        }
+                        
+                        # Handle other permissions using Add-MailboxPermission
+                        $otherRights = $AccessRights | Where-Object { $_ -ne 'SendAs' }
+                        if ($otherRights) {
+                            $null = New-ExoRequest -tenantid $TenantFilter -cmdlet 'Add-MailboxPermission' -cmdParams @{
+                                Identity = $mailboxIdentity
+                                User = $AccessUser
+                                AccessRights = $otherRights
+                                InheritanceType = 'all'
+                                Automapping = $Automap
+                            } -ErrorAction Stop
+                        }
                         
                         $addEnd = Get-Date
-                        Write-LogMessage -headers $Headers -API $APIName -tenant $TenantFilter -message "Add-MailboxPermission for $mailboxIdentity took $($addEnd - $addStart)" -Sev Debug
+                        Write-LogMessage -headers $Headers -API $APIName -tenant $TenantFilter -message "Added permissions for $mailboxIdentity took $($addEnd - $addStart)" -Sev Debug
                         
                         $results.Success++
                         Write-LogMessage -headers $Headers -API $APIName -tenant $TenantFilter -message "Added $($AccessRights -join ', ') access for $AccessUser to $mailboxIdentity (AutoMapping: $Automap)" -Sev Info
